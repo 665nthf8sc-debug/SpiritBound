@@ -1,0 +1,1861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spiritbound HD - A Creature Collector Adventure</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 50%, #0d1b2a 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            font-family: 'Nunito', sans-serif;
+            overflow: hidden;
+        }
+        
+        #gameTitle {
+            color: #e94560;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 28px;
+            text-shadow: 
+                0 0 10px rgba(233, 69, 96, 0.8),
+                0 0 30px rgba(233, 69, 96, 0.5),
+                0 0 50px rgba(233, 69, 96, 0.3),
+                3px 3px 0px #533483;
+            margin: 10px 0;
+            letter-spacing: 3px;
+            animation: titleGlow 3s ease-in-out infinite;
+        }
+        
+        @keyframes titleGlow {
+            0%, 100% { text-shadow: 0 0 10px rgba(233, 69, 96, 0.8), 0 0 30px rgba(233, 69, 96, 0.5), 0 0 50px rgba(233, 69, 96, 0.3), 3px 3px 0px #533483; }
+            50% { text-shadow: 0 0 20px rgba(233, 69, 96, 1), 0 0 40px rgba(233, 69, 96, 0.7), 0 0 60px rgba(233, 69, 96, 0.5), 3px 3px 0px #533483; }
+        }
+        
+        #gameContainer {
+            position: relative;
+            border: 4px solid #533483;
+            border-radius: 12px;
+            box-shadow: 
+                0 0 60px rgba(83, 52, 131, 0.6),
+                0 0 100px rgba(83, 52, 131, 0.3),
+                inset 0 0 80px rgba(0,0,0,0.4);
+            background: #0a0a0a;
+            overflow: hidden;
+        }
+        
+        #gameCanvas {
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        #spiritPanel {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background: linear-gradient(135deg, rgba(10, 10, 25, 0.98), rgba(20, 20, 40, 0.98));
+            border: 2px solid #e94560;
+            border-radius: 16px;
+            padding: 20px;
+            min-width: 280px;
+            pointer-events: auto;
+            box-shadow: 
+                0 8px 32px rgba(0,0,0,0.5),
+                0 0 20px rgba(233, 69, 96, 0.3),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        #spiritPanel h3 {
+            color: #ffd700;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        
+        .bondBar {
+            margin: 12px 0;
+        }
+        
+        .bondBar label {
+            color: #ccc;
+            font-size: 12px;
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .bar {
+            height: 16px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .bar-fill {
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .bond-fill { 
+            background: linear-gradient(90deg, #ff6b9d, #c44569, #ff6b9d);
+            background-size: 200% 100%;
+            animation: gradientShift 3s ease infinite;
+        }
+        .energy-fill { 
+            background: linear-gradient(90deg, #4facfe, #00f2fe, #4facfe);
+            background-size: 200% 100%;
+            animation: gradientShift 3s ease infinite;
+        }
+        .happiness-fill { 
+            background: linear-gradient(90deg, #f9ca24, #f0932b, #f9ca24);
+            background-size: 200% 100%;
+            animation: gradientShift 3s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .actionButtons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .actionBtn {
+            flex: 1;
+            padding: 12px 8px;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 9px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: auto;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-pet { 
+            background: linear-gradient(135deg, #ff6b9d, #c44569);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.4);
+        }
+        .btn-feed { 
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+        .btn-play { 
+            background: linear-gradient(135deg, #f9ca24, #f0932b);
+            color: #333;
+            box-shadow: 0 4px 15px rgba(249, 202, 36, 0.4);
+        }
+        
+        .actionBtn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        
+        .actionBtn:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+        
+        .actionBtn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .actionBtn:hover::before {
+            left: 100%;
+        }
+        
+        #dialogueBox {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: linear-gradient(135deg, rgba(10, 15, 30, 0.98), rgba(20, 25, 50, 0.98));
+            border: 2px solid #4facfe;
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 380px;
+            min-height: 100px;
+            pointer-events: auto;
+            display: none;
+            box-shadow: 
+                0 8px 32px rgba(0,0,0,0.5),
+                0 0 30px rgba(79, 172, 254, 0.2),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        #dialogueBox.show {
+            display: block;
+            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        #dialogueText {
+            color: #fff;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        #dialogueSpeaker {
+            color: #ffd700;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        
+        #instructions {
+            color: #aaa;
+            font-size: 13px;
+            margin-top: 12px;
+            text-align: center;
+            line-height: 1.6;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        #instructions span {
+            color: #4facfe;
+            font-weight: bold;
+        }
+        
+        #notification {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, rgba(233, 69, 96, 0.98), rgba(196, 69, 105, 0.98));
+            color: white;
+            padding: 20px 40px;
+            border-radius: 12px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            display: none;
+            z-index: 100;
+            text-align: center;
+            box-shadow: 
+                0 10px 40px rgba(233, 69, 96, 0.5),
+                0 0 60px rgba(233, 69, 96, 0.3);
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        #notification.show {
+            display: block;
+            animation: notificationPulse 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes notificationPulse {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        
+        #minimap {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 150px;
+            height: 100px;
+            background: rgba(10, 10, 25, 0.9);
+            border: 2px solid #533483;
+            border-radius: 10px;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameTitle">✦ SPIRITBOUND HD ✦</div>
+    
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="1024" height="640"></canvas>
+        
+        <div id="ui">
+            <canvas id="minimap"></canvas>
+            
+            <div id="spiritPanel">
+                <h3>✨ Lumina ✨</h3>
+                <div class="bondBar">
+                    <label>Bond Level: <span id="bondValue">1</span></label>
+                    <div class="bar"><div class="bar-fill bond-fill" id="bondBar" style="width: 15%"></div></div>
+                </div>
+                <div class="bondBar">
+                    <label>Energy</label>
+                    <div class="bar"><div class="bar-fill energy-fill" id="energyBar" style="width: 80%"></div></div>
+                </div>
+                <div class="bondBar">
+                    <label>Happiness</label>
+                    <div class="bar"><div class="bar-fill happiness-fill" id="happinessBar" style="width: 70%"></div></div>
+                </div>
+                <div class="actionButtons">
+                    <button class="actionBtn btn-pet" onclick="game.interact('pet')">❤️ PET</button>
+                    <button class="actionBtn btn-feed" onclick="game.interact('feed')">🍖 FEED</button>
+                    <button class="actionBtn btn-play" onclick="game.interact('play')">🎾 PLAY</button>
+                </div>
+            </div>
+            
+            <div id="dialogueBox">
+                <div id="dialogueSpeaker">Name</div>
+                <div id="dialogueText">Message</div>
+            </div>
+            
+            <div id="notification"></div>
+        </div>
+    </div>
+    
+    <div id="instructions">
+        <span>WASD / Arrow Keys</span> to move &nbsp;|&nbsp; 
+        <span>Click</span> to interact &nbsp;|&nbsp; 
+        <span>Space</span> to talk to your spirit
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const minimapCanvas = document.getElementById('minimap');
+        const minimapCtx = minimapCanvas.getContext('2d');
+        
+        minimapCanvas.width = 150;
+        minimapCanvas.height = 100;
+        
+        ctx.imageSmoothingEnabled = false;
+        
+        // Game state with enhanced graphics settings
+        const game = {
+            keys: {},
+            camera: { x: 0, y: 0, shake: 0, shakeX: 0, shakeY: 0 },
+            particles: [],
+            dialogue: null,
+            dialogueTimer: 0,
+            lastTime: 0,
+            timeOfDay: 0, // 0-1 cycle
+            weather: {
+                particles: [],
+                wind: 0.5,
+                intensity: 0.3
+            },
+            spirit: {
+                name: "Lumina",
+                type: "Ember Fox",
+                bond: 15,
+                maxBond: 100,
+                energy: 80,
+                happiness: 70,
+                x: 520,
+                y: 360,
+                targetX: 520,
+                targetY: 360,
+                frame: 0,
+                state: 'idle',
+                facing: 1,
+                scale: 1,
+                glowIntensity: 0,
+                auraPhase: 0
+            },
+            player: {
+                x: 500,
+                y: 320,
+                vx: 0,
+                vy: 0,
+                speed: 4,
+                frame: 0,
+                facing: 1,
+                state: 'idle',
+                footstepTimer: 0
+            },
+            village: {
+                buildings: [],
+                decorations: [],
+                npcs: [],
+                lights: []
+            },
+            floatingText: [],
+            screenEffects: {
+                flash: 0,
+                vignette: 1
+            }
+        };
+        
+        // Initialize enhanced village
+        function initVillage() {
+            // Buildings with more detail
+            game.village.buildings = [
+                { type: 'house', x: 150, y: 150, w: 140, h: 120, color: '#6b4423', roof: '#8b6914', detail: 'cozy' },
+                { type: 'house', x: 750, y: 120, w: 160, h: 130, color: '#5d4e37', roof: '#a0522d', detail: 'large' },
+                { type: 'temple', x: 420, y: 80, w: 180, h: 150, color: '#3d3d5c', roof: '#ffd700', detail: 'grand' },
+                { type: 'shop', x: 80, y: 420, w: 120, h: 100, color: '#4a4a4a', roof: '#6b4423', detail: 'merchant' },
+                { type: 'spiritshrine', x: 850, y: 380, w: 120, h: 140, color: '#2d2d4a', roof: '#9d4edd', detail: 'mystic' },
+                { type: 'inn', x: 1100, y: 200, w: 150, h: 130, color: '#5d4037', roof: '#8d6e63', detail: 'welcoming' }
+            ];
+            
+            // Decorative elements
+            for (let i = 0; i < 50; i++) {
+                const type = Math.random();
+                game.village.decorations.push({
+                    type: type > 0.7 ? 'tree' : type > 0.4 ? 'flower' : type > 0.2 ? 'rock' : 'grass',
+                    x: Math.random() * 1800 + 50,
+                    y: Math.random() * 1200 + 50,
+                    variant: Math.floor(Math.random() * 4),
+                    scale: 0.8 + Math.random() * 0.4
+                });
+            }
+            
+            // NPCs
+            game.village.npcs = [
+                { name: "Elder Sage", x: 480, y: 260, dialogue: "Welcome, young Spirit Warden. Your journey begins here in Aetheria.", color: '#9370db', role: 'guide' },
+                { name: "Spirit Merchant", x: 130, y: 500, dialogue: "I trade rare items for spirit essence. Come back when you've explored!", color: '#20b2aa', role: 'merchant' },
+                { name: "Village Child", x: 820, y: 280, dialogue: "I saw a mysterious spirit near the ruins! It was glowing!", color: '#ff69b4', role: 'child' },
+                { name: "Innkeeper", x: 1160, y: 320, dialogue: "Rest here anytime, Warden. Your spirits need rest too.", color: '#cd853f', role: 'innkeeper' }
+            ];
+            
+            // Dynamic lights
+            game.village.lights = [
+                { x: 510, y: 200, color: '#ffd700', radius: 100, pulse: 0 },
+                { x: 910, y: 450, color: '#9d4edd', radius: 80, pulse: Math.PI },
+                { x: 140, y: 200, color: '#ff6b9d', radius: 60, pulse: Math.PI / 2 }
+            ];
+        }
+        
+        // Input handling
+        window.addEventListener('keydown', (e) => {
+            game.keys[e.key.toLowerCase()] = true;
+            if (e.code === 'Space') {
+                e.preventDefault();
+                talkToSpirit();
+            }
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            game.keys[e.key.toLowerCase()] = false;
+        });
+        
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left + game.camera.x;
+            const y = e.clientY - rect.top + game.camera.y;
+            
+            game.village.npcs.forEach(npc => {
+                const dx = x - npc.x;
+                const dy = y - npc.y;
+                if (Math.sqrt(dx*dx + dy*dy) < 50) {
+                    showDialogue(npc.name, npc.dialogue);
+                    screenShake(3);
+                }
+            });
+            
+            game.village.buildings.forEach(b => {
+                if (x > b.x && x < b.x + b.w && y > b.y && y < b.y + b.h) {
+                    if (b.type === 'spiritshrine') {
+                        showNotification("✨ Spirit Shrine ✨\nBond with your spirits here");
+                        createMagicBurst(x, y, '#9d4edd');
+                    } else if (b.type === 'shop') {
+                        showNotification("🛒 Spirit Emporium\nTrade essence for items!");
+                    } else if (b.type === 'inn') {
+                        showNotification("🏨 Starlight Inn\nRest and recover");
+                        game.spirit.energy = Math.min(100, game.spirit.energy + 30);
+                        updateUI();
+                    }
+                }
+            });
+        });
+        
+        function talkToSpirit() {
+            const dx = game.player.x - game.spirit.x;
+            const dy = game.player.y - game.spirit.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            
+            if (dist < 120) {
+                const messages = [
+                    "Lumina's flames dance with joy!",
+                    "Lumina nuzzles against you warmly.",
+                    "You feel a deep spiritual connection.",
+                    "Lumina's aura glows brighter!",
+                    "*happy ember fox noises*",
+                    "Lumina trusts you completely."
+                ];
+                const msg = messages[Math.floor(Math.random() * messages.length)];
+                showDialogue("Lumina", msg);
+                createHeartBurst(game.spirit.x, game.spirit.y - 30);
+                game.spirit.happiness = Math.min(100, game.spirit.happiness + 5);
+                updateUI();
+                screenShake(2);
+            }
+        }
+        
+        game.interact = function(type) {
+            const dx = game.player.x - game.spirit.x;
+            const dy = game.player.y - game.spirit.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            
+            if (dist > 150) {
+                showNotification("Get closer to Lumina!");
+                return;
+            }
+            
+            switch(type) {
+                case 'pet':
+                    game.spirit.bond = Math.min(game.spirit.maxBond, game.spirit.bond + 8);
+                    game.spirit.happiness = Math.min(100, game.spirit.happiness + 12);
+                    createHeartBurst(game.spirit.x, game.spirit.y - 40);
+                    addFloatingText(game.spirit.x, game.spirit.y - 60, "❤️ Bond +", '#ff6b9d');
+                    showDialogue("Lumina", "*purrs with warm flames*");
+                    screenShake(3);
+                    break;
+                case 'feed':
+                    game.spirit.energy = Math.min(100, game.spirit.energy + 25);
+                    game.spirit.bond = Math.min(game.spirit.maxBond, game.spirit.bond + 5);
+                    createSparkleBurst(game.spirit.x, game.spirit.y);
+                    addFloatingText(game.spirit.x, game.spirit.y - 60, "✨ Delicious!", '#4facfe');
+                    showDialogue("Lumina", "Tasty! I feel energized!");
+                    break;
+                case 'play':
+                    game.spirit.happiness = Math.min(100, game.spirit.happiness + 18);
+                    game.spirit.energy = Math.max(0, game.spirit.energy - 12);
+                    game.spirit.bond = Math.min(game.spirit.maxBond, game.spirit.bond + 12);
+                    game.spirit.state = 'playing';
+                    setTimeout(() => game.spirit.state = 'idle', 3000);
+                    createStarBurst(game.spirit.x, game.spirit.y - 20);
+                    addFloatingText(game.spirit.x, game.spirit.y - 70, "⭐ So fun!", '#ffd700');
+                    showDialogue("Lumina", "Wheee! Chase me!");
+                    screenShake(4);
+                    break;
+            }
+            updateUI();
+        };
+        
+        function updateUI() {
+            document.getElementById('bondBar').style.width = (game.spirit.bond / game.spirit.maxBond * 100) + '%';
+            document.getElementById('energyBar').style.width = game.spirit.energy + '%';
+            document.getElementById('happinessBar').style.width = game.spirit.happiness + '%';
+            document.getElementById('bondValue').textContent = Math.floor(game.spirit.bond / 20) + 1;
+        }
+        
+        function showDialogue(speaker, text) {
+            document.getElementById('dialogueSpeaker').textContent = speaker;
+            document.getElementById('dialogueText').textContent = text;
+            document.getElementById('dialogueBox').classList.add('show');
+            game.dialogueTimer = 400;
+        }
+        
+        function showNotification(text) {
+            const notif = document.getElementById('notification');
+            notif.textContent = text;
+            notif.classList.add('show');
+            setTimeout(() => notif.classList.remove('show'), 3000);
+        }
+        
+        function addFloatingText(x, y, text, color) {
+            game.floatingText.push({ x, y, text, color, life: 80, vy: -1.5, scale: 1 });
+        }
+        
+        function screenShake(intensity) {
+            game.camera.shake = intensity;
+        }
+        
+        // Enhanced particle systems
+        function createHeartBurst(x, y) {
+            for (let i = 0; i < 12; i++) {
+                const angle = (Math.PI * 2 / 12) * i;
+                game.particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * 4,
+                    vy: Math.sin(angle) * 4 - 2,
+                    life: 90,
+                    maxLife: 90,
+                    type: 'heart',
+                    size: 12 + Math.random() * 8,
+                    rotation: angle,
+                    rotSpeed: (Math.random() - 0.5) * 0.2
+                });
+            }
+        }
+        
+        function createStarBurst(x, y) {
+            for (let i = 0; i < 15; i++) {
+                const angle = (Math.PI * 2 / 15) * i + Math.random() * 0.5;
+                game.particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * 5,
+                    vy: Math.sin(angle) * 5 - 3,
+                    life: 100,
+                    maxLife: 100,
+                    type: 'star',
+                    size: 10 + Math.random() * 6,
+                    rotation: 0,
+                    rotSpeed: 0.15
+                });
+            }
+        }
+        
+        function createSparkleBurst(x, y) {
+            for (let i = 0; i < 20; i++) {
+                game.particles.push({
+                    x: x + (Math.random() - 0.5) * 60,
+                    y: y + (Math.random() - 0.5) * 40,
+                    vx: (Math.random() - 0.5) * 3,
+                    vy: -Math.random() * 4 - 1,
+                    life: 70,
+                    maxLife: 70,
+                    type: 'sparkle',
+                    size: 4 + Math.random() * 4,
+                    rotation: Math.random() * Math.PI,
+                    rotSpeed: (Math.random() - 0.5) * 0.3
+                });
+            }
+        }
+        
+        function createMagicBurst(x, y, color) {
+            for (let i = 0; i < 25; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 4;
+                game.particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 80,
+                    maxLife: 80,
+                    type: 'magic',
+                    color: color,
+                    size: 3 + Math.random() * 5,
+                    rotation: angle,
+                    rotSpeed: 0.1
+                });
+            }
+        }
+        
+        function update(dt) {
+            // Time of day cycle
+            game.timeOfDay += 0.0005;
+            if (game.timeOfDay > 1) game.timeOfDay = 0;
+            
+            // Player movement with acceleration
+            let mx = 0, my = 0;
+            if (game.keys['w'] || game.keys['arrowup']) my = -1;
+            if (game.keys['s'] || game.keys['arrowdown']) my = 1;
+            if (game.keys['a'] || game.keys['arrowleft']) mx = -1;
+            if (game.keys['d'] || game.keys['arrowright']) mx = 1;
+            
+            if (mx !== 0 || my !== 0) {
+                const len = Math.sqrt(mx*mx + my*my);
+                mx /= len;
+                my /= len;
+                
+                // Smooth acceleration
+                const accel = 0.3;
+                game.player.vx += (mx * game.player.speed - game.player.vx) * accel;
+                game.player.vy += (my * game.player.speed - game.player.vy) * accel;
+                
+                game.player.state = 'walking';
+                game.player.facing = mx > 0 ? 1 : -1;
+                game.player.frame += 0.18;
+                
+                // Footstep particles
+                game.player.footstepTimer++;
+                if (game.player.footstepTimer > 15) {
+                    game.player.footstepTimer = 0;
+                    game.particles.push({
+                        x: game.player.x + (Math.random() - 0.5) * 20,
+                        y: game.player.y + 25,
+                        vx: (Math.random() - 0.5) * 0.5,
+                        vy: -0.5,
+                        life: 40,
+                        maxLife: 40,
+                        type: 'dust',
+                        size: 4 + Math.random() * 4
+                    });
+                }
+            } else {
+                game.player.vx *= 0.85;
+                game.player.vy *= 0.85;
+                game.player.state = 'idle';
+                game.player.frame += 0.06;
+                game.player.footstepTimer = 0;
+            }
+            
+            game.player.x += game.player.vx;
+            game.player.y += game.player.vy;
+            
+            // Expanded bounds
+            game.player.x = Math.max(50, Math.min(1850, game.player.x));
+            game.player.y = Math.max(50, Math.min(1250, game.player.y));
+            
+            // Camera follow with smooth interpolation
+            const targetCamX = game.player.x - canvas.width/2;
+            const targetCamY = game.player.y - canvas.height/2;
+            game.camera.x += (targetCamX - game.camera.x) * 0.08;
+            game.camera.y += (targetCamY - game.camera.y) * 0.08;
+            
+            // Screen shake decay
+            if (game.camera.shake > 0) {
+                game.camera.shakeX = (Math.random() - 0.5) * game.camera.shake * 2;
+                game.camera.shakeY = (Math.random() - 0.5) * game.camera.shake * 2;
+                game.camera.shake *= 0.9;
+                if (game.camera.shake < 0.5) game.camera.shake = 0;
+            } else {
+                game.camera.shakeX = 0;
+                game.camera.shakeY = 0;
+            }
+            
+            // Spirit AI with smoother following
+            const targetDist = 70;
+            const dx = game.player.x - game.spirit.x;
+            const dy = game.player.y - game.spirit.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            
+            if (dist > targetDist) {
+                const followStrength = 0.04;
+                game.spirit.targetX = game.player.x - (dx/dist) * targetDist;
+                game.spirit.targetY = game.player.y - (dy/dist) * targetDist;
+                game.spirit.x += (game.spirit.targetX - game.spirit.x) * followStrength;
+                game.spirit.y += (game.spirit.targetY - game.spirit.y) * followStrength;
+                game.spirit.state = 'following';
+                game.spirit.facing = dx > 0 ? 1 : -1;
+                game.spirit.frame += 0.14;
+            } else {
+                // Idle floating
+                game.spirit.state = 'idle';
+                game.spirit.frame += 0.07;
+            }
+            
+            // Spirit aura animation
+            game.spirit.auraPhase += 0.05;
+            game.spirit.glowIntensity = 0.6 + Math.sin(Date.now() / 400) * 0.4;
+            
+            // Update particles with enhanced physics
+            game.particles = game.particles.filter(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.08; // gravity
+                p.vx *= 0.98; // air resistance
+                p.life--;
+                
+                if (p.rotSpeed) p.rotation += p.rotSpeed;
+                
+                return p.life > 0;
+            });
+            
+            // Update floating text
+            game.floatingText = game.floatingText.filter(t => {
+                t.y += t.vy;
+                t.life--;
+                t.scale = 1 + (80 - t.life) / 80 * 0.3;
+                return t.life > 0;
+            });
+            
+            // Dialogue timer
+            if (game.dialogueTimer > 0) {
+                game.dialogueTimer--;
+                if (game.dialogueTimer <= 0) {
+                    document.getElementById('dialogueBox').classList.remove('show');
+                }
+            }
+            
+            // Ambient particles
+            if (Math.random() < 0.03) {
+                createAmbientParticle();
+            }
+            
+            // Update lights
+            game.village.lights.forEach(light => {
+                light.pulse += 0.03;
+            });
+        }
+        
+        function createAmbientParticle() {
+            const types = ['firefly', 'magic', 'ember'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            game.particles.push({
+                x: game.camera.x + Math.random() * canvas.width,
+                y: game.camera.y + Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 0.8,
+                vy: (Math.random() - 0.5) * 0.8 - 0.3,
+                life: 200 + Math.random() * 100,
+                maxLife: 300,
+                type: type,
+                size: type === 'firefly' ? 3 : 2
+            });
+        }
+        
+        // Drawing functions with enhanced graphics
+        function draw() {
+            const camX = game.camera.x + game.camera.shakeX;
+            const camY = game.camera.y + game.camera.shakeY;
+            
+            // Dynamic sky gradient based on time
+            drawSky();
+            
+            // Parallax background layers
+            drawParallaxBackground(camX, camY);
+            
+            // Ground with texture
+            drawGround(camX, camY);
+            
+            // Sort all renderable objects by Y for depth
+            const renderList = [];
+            
+            // Add decorations
+            game.village.decorations.forEach(d => {
+                renderList.push({ type: 'decoration', obj: d, y: d.y });
+            });
+            
+            // Add buildings
+            game.village.buildings.forEach(b => {
+                renderList.push({ type: 'building', obj: b, y: b.y + b.h });
+            });
+            
+            // Add NPCs
+            game.village.npcs.forEach(npc => {
+                renderList.push({ type: 'npc', obj: npc, y: npc.y });
+            });
+            
+            // Add spirit and player
+            renderList.push({ type: 'spirit', y: game.spirit.y });
+            renderList.push({ type: 'player', y: game.player.y });
+            
+            // Sort by Y
+            renderList.sort((a, b) => a.y - b.y);
+            
+            // Draw sorted objects
+            renderList.forEach(item => {
+                switch(item.type) {
+                    case 'decoration': drawEnhancedDecoration(item.obj, camX, camY); break;
+                    case 'building': drawEnhancedBuilding(item.obj, camX, camY); break;
+                    case 'npc': drawEnhancedNPC(item.obj, camX, camY); break;
+                    case 'spirit': drawEnhancedSpirit(camX, camY); break;
+                    case 'player': drawEnhancedPlayer(camX, camY); break;
+                }
+            });
+            
+            // Lighting effects
+            drawLighting(camX, camY);
+            
+            // Particles
+            drawEnhancedParticles(camX, camY);
+            
+            // Floating text
+            drawFloatingText(camX, camY);
+            
+            // Screen effects
+            drawScreenEffects();
+            
+            // Minimap
+            drawMinimap();
+        }
+        
+        function drawSky() {
+            const hour = game.timeOfDay * 24;
+            let topColor, bottomColor;
+            
+            if (hour < 5) { // Night
+                topColor = '#0a0a1a';
+                bottomColor = '#1a1a3e';
+            } else if (hour < 8) { // Dawn
+                topColor = '#2d1b4e';
+                bottomColor = '#ff6b6b';
+            } else if (hour < 17) { // Day
+                topColor = '#4facfe';
+                bottomColor = '#87ceeb';
+            } else if (hour < 20) { // Dusk
+                topColor = '#2d1b4e';
+                bottomColor = '#f093fb';
+            } else { // Night
+                topColor = '#0a0a1a';
+                bottomColor = '#1a1a3e';
+            }
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, topColor);
+            gradient.addColorStop(1, bottomColor);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Stars (only at night)
+            if (hour < 6 || hour > 19) {
+                ctx.fillStyle = '#ffffff';
+                for (let i = 0; i < 100; i++) {
+                    const sx = (i * 173.5 + game.camera.x * 0.05) % canvas.width;
+                    const sy = (i * 91.3 + game.camera.y * 0.05) % (canvas.height * 0.7);
+                    const twinkle = Math.sin(Date.now() / 800 + i) * 0.5 + 0.5;
+                    const size = 1 + (i % 3);
+                    ctx.globalAlpha = twinkle * 0.9;
+                    ctx.fillRect(sx, sy, size, size);
+                }
+                ctx.globalAlpha = 1;
+            }
+            
+            // Moon/Sun
+            const celestialX = canvas.width * 0.8;
+            const celestialY = canvas.height * 0.15 + Math.sin(game.timeOfDay * Math.PI * 2) * 30;
+            
+            if (hour < 6 || hour > 18) {
+                // Moon
+                ctx.fillStyle = '#fff';
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = '#fff';
+                ctx.beginPath();
+                ctx.arc(celestialX, celestialY, 25, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                
+                // Moon crater
+                ctx.fillStyle = '#ddd';
+                ctx.beginPath();
+                ctx.arc(celestialX - 8, celestialY + 5, 6, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                // Sun
+                const sunGradient = ctx.createRadialGradient(celestialX, celestialY, 0, celestialX, celestialY, 40);
+                sunGradient.addColorStop(0, '#fff');
+                sunGradient.addColorStop(0.5, '#ffd700');
+                sunGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+                ctx.fillStyle = sunGradient;
+                ctx.beginPath();
+                ctx.arc(celestialX, celestialY, 40, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        function drawParallaxBackground(camX, camY) {
+            // Distant floating islands
+            const islands = [
+                { x: 200, y: 150, w: 300, h: 80, parallax: 0.1 },
+                { x: 700, y: 100, w: 400, h: 100, parallax: 0.15 },
+                { x: 1200, y: 180, w: 250, h: 60, parallax: 0.08 }
+            ];
+            
+            islands.forEach(island => {
+                const px = island.x - camX * island.parallax;
+                const py = island.y - camY * island.parallax * 0.5;
+                
+                // Island shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.beginPath();
+                ctx.ellipse(px + island.w/2, py + island.h - 5, island.w/2, 15, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Island body
+                const grad = ctx.createLinearGradient(px, py, px, py + island.h);
+                grad.addColorStop(0, '#4a5568');
+                grad.addColorStop(1, '#2d3748');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.moveTo(px, py + island.h/2);
+                ctx.quadraticCurveTo(px + island.w/2, py - 20, px + island.w, py + island.h/2);
+                ctx.lineTo(px + island.w - 20, py + island.h);
+                ctx.lineTo(px + 20, py + island.h);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Vegetation on island
+                ctx.fillStyle = '#22543d';
+                for (let i = 0; i < 5; i++) {
+                    const tx = px + 40 + i * (island.w - 80) / 4;
+                    const ty = py + island.h - 10;
+                    ctx.beginPath();
+                    ctx.moveTo(tx, ty);
+                    ctx.lineTo(tx - 10, ty - 25);
+                    ctx.lineTo(tx + 10, ty - 25);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            });
+        }
+        
+        function drawGround(camX, camY) {
+            // Main ground
+            const groundY = 400 - camY;
+            const grad = ctx.createLinearGradient(0, groundY, 0, canvas.height);
+            grad.addColorStop(0, '#2d5016');
+            grad.addColorStop(0.3, '#3d6b1f');
+            grad.addColorStop(1, '#1a3009');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, Math.max(0, groundY), canvas.width, canvas.height);
+            
+            // Grass details
+            ctx.fillStyle = '#4a7c2a';
+            for (let x = 0; x < canvas.width; x += 20) {
+                const worldX = x + camX;
+                const grassHeight = Math.sin(worldX * 0.1) * 3 + 5;
+                const gy = groundY + Math.sin(worldX * 0.05) * 10;
+                if (gy > 0) {
+                    ctx.fillRect(x, gy, 2, grassHeight);
+                }
+            }
+        }
+        
+        function drawEnhancedBuilding(b, camX, camY) {
+            const x = b.x - camX;
+            const y = b.y - camY;
+            
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(x + b.w/2, y + b.h - 3, b.w/2 + 10, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Building body with gradient
+            const bodyGrad = ctx.createLinearGradient(x, y + 20, x, y + b.h);
+            bodyGrad.addColorStop(0, b.color);
+            bodyGrad.addColorStop(1, darken(b.color, 20));
+            ctx.fillStyle = bodyGrad;
+            ctx.fillRect(x, y + 20, b.w, b.h - 20);
+            
+            // Roof with depth
+            const roofGrad = ctx.createLinearGradient(x, y - 10, x, y + 30);
+            roofGrad.addColorStop(0, lighten(b.roof, 20));
+            roofGrad.addColorStop(1, b.roof);
+            ctx.fillStyle = roofGrad;
+            ctx.beginPath();
+            ctx.moveTo(x - 15, y + 20);
+            ctx.lineTo(x + b.w/2, y - 15);
+            ctx.lineTo(x + b.w + 15, y + 20);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Roof highlight
+            ctx.strokeStyle = lighten(b.roof, 40);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x - 10, y + 18);
+            ctx.lineTo(x + b.w/2, y - 10);
+            ctx.lineTo(x + b.w + 10, y + 18);
+            ctx.stroke();
+            
+            // Enhanced details based on type
+            if (b.type === 'house') {
+                // Door with frame
+                ctx.fillStyle = '#3d2817';
+                ctx.fillRect(x + b.w/2 - 18, y + b.h - 50, 36, 50);
+                ctx.fillStyle = '#5d4037';
+                ctx.fillRect(x + b.w/2 - 14, y + b.h - 46, 28, 46);
+                // Door handle
+                ctx.fillStyle = '#ffd700';
+                ctx.beginPath();
+                ctx.arc(x + b.w/2 + 8, y + b.h - 25, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Windows with glow
+                drawWindow(x + 25, y + 45, 30, 30);
+                drawWindow(x + b.w - 55, y + 45, 30, 30);
+            } else if (b.type === 'temple') {
+                // Grand pillars
+                for (let i = 0; i < 4; i++) {
+                    const px = x + 25 + i * 40;
+                    const pillarGrad = ctx.createLinearGradient(px, y + 30, px + 18, y + 30);
+                    pillarGrad.addColorStop(0, '#5a5a7a');
+                    pillarGrad.addColorStop(0.5, '#8a8aaa');
+                    pillarGrad.addColorStop(1, '#4a4a6a');
+                    ctx.fillStyle = pillarGrad;
+                    ctx.fillRect(px, y + 30, 18, b.h - 30);
+                    
+                    // Pillar cap
+                    ctx.fillStyle = '#ffd700';
+                    ctx.fillRect(px - 3, y + 25, 24, 8);
+                }
+                
+                // Mystic glow
+                const glowIntensity = 0.3 + Math.sin(Date.now()/800) * 0.15;
+                const templeGlow = ctx.createRadialGradient(x + b.w/2, y + 60, 0, x + b.w/2, y + 60, 70);
+                templeGlow.addColorStop(0, `rgba(255, 215, 0, ${glowIntensity})`);
+                templeGlow.addColorStop(1, 'rgba(255, 215, 0, 0)');
+                ctx.fillStyle = templeGlow;
+                ctx.fillRect(x + 20, y + 20, b.w - 40, b.h - 40);
+            } else if (b.type === 'spiritshrine') {
+                // Mystic symbol with animation
+                const pulse = 1 + Math.sin(Date.now() / 500) * 0.1;
+                ctx.fillStyle = '#9d4edd';
+                ctx.beginPath();
+                ctx.arc(x + b.w/2, y + b.h/2 + 10, 25 * pulse, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = b.color;
+                ctx.beginPath();
+                ctx.arc(x + b.w/2, y + b.h/2 + 10, 15 * pulse, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Rune circle
+                ctx.strokeStyle = '#e0b0ff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x + b.w/2, y + b.h/2 + 10, 35, Date.now()/1000, Date.now()/1000 + Math.PI * 1.5);
+                ctx.stroke();
+            }
+        }
+        
+        function drawWindow(wx, wy, ww, wh) {
+            // Window frame
+            ctx.fillStyle = '#4a3728';
+            ctx.fillRect(wx - 2, wy - 2, ww + 4, wh + 4);
+            
+            // Glass with glow
+            const winGrad = ctx.createLinearGradient(wx, wy, wx, wy + wh);
+            winGrad.addColorStop(0, '#87ceeb');
+            winGrad.addColorStop(1, '#4facfe');
+            ctx.fillStyle = winGrad;
+            ctx.fillRect(wx, wy, ww, wh);
+            
+            // Window cross
+            ctx.fillStyle = '#4a3728';
+            ctx.fillRect(wx + ww/2 - 2, wy, 4, wh);
+            ctx.fillRect(wx, wy + wh/2 - 2, ww, 4);
+            
+            // Glow effect
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#4facfe';
+            ctx.fillStyle = 'rgba(135, 206, 235, 0.3)';
+            ctx.fillRect(wx - 5, wy - 5, ww + 10, wh + 10);
+            ctx.shadowBlur = 0;
+        }
+        
+        function drawEnhancedDecoration(d, camX, camY) {
+            const x = d.x - camX;
+            const y = d.y - camY;
+            const scale = d.scale;
+            
+            if (d.type === 'tree') {
+                // Shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.15)';
+                ctx.beginPath();
+                ctx.ellipse(x, y + 5, 20 * scale, 6 * scale, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Trunk with texture
+                const trunkGrad = ctx.createLinearGradient(x - 8*scale, y - 40*scale, x + 8*scale, y);
+                trunkGrad.addColorStop(0, '#5d4037');
+                trunkGrad.addColorStop(0.5, '#8d6e63');
+                trunkGrad.addColorStop(1, '#4a3728');
+                ctx.fillStyle = trunkGrad;
+                ctx.fillRect(x - 8*scale, y - 40*scale, 16*scale, 45*scale);
+                
+                // Leaves with multiple layers
+                const leafColors = ['#228b22', '#2d5016', '#3d7a3d'];
+                const leafColor = leafColors[d.variant % leafColors.length];
+                
+                // Back leaves
+                ctx.fillStyle = darken(leafColor, 20);
+                ctx.beginPath();
+                ctx.arc(x - 15*scale, y - 35*scale, 22*scale, 0, Math.PI * 2);
+                ctx.arc(x + 15*scale, y - 35*scale, 22*scale, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Front leaves
+                const leafGrad = ctx.createRadialGradient(x, y - 50*scale, 0, x, y - 50*scale, 30*scale);
+                leafGrad.addColorStop(0, lighten(leafColor, 30));
+                leafGrad.addColorStop(1, leafColor);
+                ctx.fillStyle = leafGrad;
+                ctx.beginPath();
+                ctx.arc(x, y - 50*scale, 28*scale, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Leaf highlights
+                ctx.fillStyle = lighten(leafColor, 50);
+                ctx.beginPath();
+                ctx.arc(x - 8*scale, y - 55*scale, 8*scale, 0, Math.PI * 2);
+                ctx.fill();
+                
+            } else if (d.type === 'flower') {
+                const colors = ['#ff6b9d', '#ffd700', '#9d4edd', '#4facfe', '#ff8fab'];
+                const color = colors[d.variant % colors.length];
+                
+                // Shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.beginPath();
+                ctx.ellipse(x, y + 3, 4*scale, 2*scale, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Stem
+                ctx.fillStyle = '#2d5016';
+                ctx.fillRect(x - 1, y - 8*scale, 2, 8*scale);
+                
+                // Petals
+                const petalGrad = ctx.createRadialGradient(x, y - 10*scale, 0, x, y - 10*scale, 8*scale);
+                petalGrad.addColorStop(0, lighten(color, 30));
+                petalGrad.addColorStop(1, color);
+                ctx.fillStyle = petalGrad;
+                
+                for (let i = 0; i < 5; i++) {
+                    const angle = (i * Math.PI * 2) / 5 - Math.PI/2;
+                    const px = x + Math.cos(angle) * 5*scale;
+                    const py = y - 10*scale + Math.sin(angle) * 5*scale;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 4*scale, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Center
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(x, y - 10*scale, 3*scale, 0, Math.PI * 2);
+                ctx.fill();
+                
+            } else if (d.type === 'rock') {
+                const rockGrad = ctx.createLinearGradient(x - 10, y - 10, x + 10, y + 5);
+                rockGrad.addColorStop(0, '#6b7280');
+                rockGrad.addColorStop(1, '#4b5563');
+                ctx.fillStyle = rockGrad;
+                ctx.beginPath();
+                ctx.ellipse(x, y, 12*scale, 8*scale, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Highlight
+                ctx.fillStyle = '#9ca3af';
+                ctx.beginPath();
+                ctx.ellipse(x - 3, y - 2, 5*scale, 3*scale, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        function drawEnhancedNPC(npc, camX, camY) {
+            const x = npc.x - camX;
+            const y = npc.y - camY;
+            
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath();
+            ctx.ellipse(x, y + 28, 16, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Body with shading
+            const bodyGrad = ctx.createLinearGradient(x - 12, y - 20, x + 12, y + 15);
+            bodyGrad.addColorStop(0, lighten(npc.color, 10));
+            bodyGrad.addColorStop(0.5, npc.color);
+            bodyGrad.addColorStop(1, darken(npc.color, 20));
+            ctx.fillStyle = bodyGrad;
+            ctx.fillRect(x - 12, y - 20, 24, 38);
+            
+            // Head
+            const headGrad = ctx.createRadialGradient(x, y - 32, 0, x, y - 32, 15);
+            headGrad.addColorStop(0, '#ffe4c4');
+            headGrad.addColorStop(1, '#fdbcb4');
+            ctx.fillStyle = headGrad;
+            ctx.beginPath();
+            ctx.arc(x, y - 32, 15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Eyes with shine
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(x - 5, y - 35, 4, 0, Math.PI * 2);
+            ctx.arc(x + 5, y - 35, 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(x - 6, y - 36, 2, 0, Math.PI * 2);
+            ctx.arc(x + 4, y - 36, 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Name tag with background
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(x - 40, y - 65, 80, 18);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 11px Nunito';
+            ctx.textAlign = 'center';
+            ctx.fillText(npc.name, x, y - 52);
+            
+            // Interaction indicator
+            const dx = game.player.x - npc.x;
+            const dy = game.player.y - npc.y;
+            if (Math.sqrt(dx*dx + dy*dy) < 70) {
+                ctx.fillStyle = '#ffd700';
+                ctx.font = '18px Arial';
+                ctx.fillText('💬', x, y - 70);
+                
+                // Glow ring
+                ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(x, y, 25, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+        
+        function drawEnhancedPlayer(camX, camY) {
+            const x = game.player.x - camX;
+            const y = game.player.y - camY;
+            const bounce = game.player.state === 'walking' ? Math.sin(game.player.frame * 2.5) * 4 : Math.sin(game.player.frame) * 1;
+            
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.25)';
+            ctx.beginPath();
+            ctx.ellipse(x, y + 32, 20, 7, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Body (Spirit Warden robe) with gradient
+            const robeGrad = ctx.createLinearGradient(x - 16, y - 15 + bounce, x + 16, y + 25 + bounce);
+            robeGrad.addColorStop(0, '#5fb3ff');
+            robeGrad.addColorStop(0.5, '#4facfe');
+            robeGrad.addColorStop(1, '#2d8cf0');
+            ctx.fillStyle = robeGrad;
+            ctx.fillRect(x - 16, y - 15 + bounce, 32, 38);
+            
+            // Robe detail - sash
+            ctx.fillStyle = '#1a5fb4';
+            ctx.fillRect(x - 16, y + 8 + bounce, 32, 6);
+            
+            // Head
+            const skinGrad = ctx.createRadialGradient(x, y - 28 + bounce, 0, x, y - 28 + bounce, 14);
+            skinGrad.addColorStop(0, '#ffe4c4');
+            skinGrad.addColorStop(1, '#fdbcb4');
+            ctx.fillStyle = skinGrad;
+            ctx.beginPath();
+            ctx.arc(x, y - 28 + bounce, 14, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Hair with flow
+            ctx.fillStyle = '#3d2817';
+            ctx.beginPath();
+            ctx.arc(x, y - 35 + bounce, 15, Math.PI, 0);
+            ctx.fill();
+            // Hair flow
+            ctx.beginPath();
+            ctx.moveTo(x - 15, y - 30 + bounce);
+            ctx.quadraticCurveTo(x - 20, y - 20 + bounce, x - 12, y - 15 + bounce);
+            ctx.lineTo(x - 8, y - 25 + bounce);
+            ctx.fill();
+            
+            // Eyes
+            ctx.fillStyle = '#333';
+            const eyeOffset = game.player.facing > 0 ? 4 : -4;
+            ctx.beginPath();
+            ctx.arc(x - 4 + eyeOffset, y - 30 + bounce, 3.5, 0, Math.PI * 2);
+            ctx.arc(x + 4 + eyeOffset, y - 30 + bounce, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(x - 5 + eyeOffset, y - 31 + bounce, 1.5, 0, Math.PI * 2);
+            ctx.arc(x + 3 + eyeOffset, y - 31 + bounce, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Spirit Warden scarf with gradient
+            const scarfGrad = ctx.createLinearGradient(x - 12, y - 8 + bounce, x + 12, y + 8 + bounce);
+            scarfGrad.addColorStop(0, '#ff7a8a');
+            scarfGrad.addColorStop(1, '#e94560');
+            ctx.fillStyle = scarfGrad;
+            ctx.beginPath();
+            ctx.moveTo(x - 12, y - 8 + bounce);
+            ctx.lineTo(x + 12, y - 8 + bounce);
+            ctx.lineTo(x, y + 8 + bounce);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Scarf tails
+            ctx.fillStyle = '#e94560';
+            const tailSway = Math.sin(Date.now() / 300) * 5;
+            ctx.beginPath();
+            ctx.moveTo(x, y + 5 + bounce);
+            ctx.lineTo(x - 8 + tailSway, y + 20 + bounce);
+            ctx.lineTo(x + 3 + tailSway, y + 18 + bounce);
+            ctx.fill();
+            
+            // Walking animation
+            if (game.player.state === 'walking') {
+                ctx.fillStyle = '#1a5fb4';
+                const legOffset = Math.sin(game.player.frame * 2.5) * 8;
+                // Left leg
+                ctx.fillRect(x - 14 + legOffset, y + 22 + bounce, 10, 12);
+                // Right leg
+                ctx.fillRect(x + 4 - legOffset, y + 22 + bounce, 10, 12);
+            } else {
+                ctx.fillStyle = '#1a5fb4';
+                ctx.fillRect(x - 14, y + 22 + bounce, 10, 12);
+                ctx.fillRect(x + 4, y + 22 + bounce, 10, 12);
+            }
+        }
+        
+        function drawEnhancedSpirit(camX, camY) {
+            const x = game.spirit.x - camX;
+            const y = game.spirit.y - camY;
+            const float = Math.sin(game.spirit.frame) * 6;
+            const glow = game.spirit.glowIntensity;
+            
+            // Outer aura glow
+            const auraGrad = ctx.createRadialGradient(x, y - 25 + float, 0, x, y - 25 + float, 80);
+            auraGrad.addColorStop(0, `rgba(255, 107, 157, ${0.15 * glow})`);
+            auraGrad.addColorStop(0.5, `rgba(255, 159, 67, ${0.08 * glow})`);
+            auraGrad.addColorStop(1, 'rgba(255, 159, 67, 0)');
+            ctx.fillStyle = auraGrad;
+            ctx.beginPath();
+            ctx.arc(x, y - 25 + float, 80, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Inner glow
+            const innerGlow = ctx.createRadialGradient(x, y - 25 + float, 0, x, y - 25 + float, 50);
+            innerGlow.addColorStop(0, `rgba(255, 107, 157, ${0.4 * glow})`);
+            innerGlow.addColorStop(0.5, `rgba(255, 159, 67, ${0.2 * glow})`);
+            innerGlow.addColorStop(1, 'rgba(255, 159, 67, 0)');
+            ctx.fillStyle = innerGlow;
+            ctx.beginPath();
+            ctx.arc(x, y - 25 + float, 50, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Animated aura rings
+            ctx.strokeStyle = `rgba(255, 107, 157, ${0.3 * glow})`;
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 3; i++) {
+                const ringScale = 1 + Math.sin(game.spirit.auraPhase + i * 2) * 0.1;
+                ctx.beginPath();
+                ctx.ellipse(x, y - 25 + float, 35 * ringScale, 20 * ringScale, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            // Tail with gradient and animation
+            const tailWag = Math.sin(game.spirit.frame * 1.8) * 12;
+            const tailGrad = ctx.createLinearGradient(x - 20, y - 30 + float, x - 40, y - 50 + float);
+            tailGrad.addColorStop(0, '#ff6b9d');
+            tailGrad.addColorStop(1, '#c44569');
+            ctx.fillStyle = tailGrad;
+            ctx.beginPath();
+            ctx.moveTo(x - 18, y + float);
+            ctx.quadraticCurveTo(x - 35, y - 25 + float + tailWag, x - 30, y - 50 + float);
+            ctx.quadraticCurveTo(x - 15, y - 35 + float, x - 8, y + float);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Tail tip flame
+            ctx.fillStyle = `rgba(255, 159, 67, ${glow})`;
+            ctx.beginPath();
+            ctx.arc(x - 30, y - 50 + float, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Body with shading
+            const bodyGrad = ctx.createRadialGradient(x - 5, y - 15 + float, 0, x, y - 10 + float, 28);
+            bodyGrad.addColorStop(0, '#ff8fab');
+            bodyGrad.addColorStop(0.5, '#ff6b9d');
+            bodyGrad.addColorStop(1, '#c44569');
+            ctx.fillStyle = bodyGrad;
+            ctx.beginPath();
+            ctx.ellipse(x, y - 10 + float, 26, 22, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Body fluff
+            ctx.fillStyle = '#ff8fab';
+            ctx.beginPath();
+            ctx.arc(x - 8, y - 20 + float, 10, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Head with gradient
+            const headGrad = ctx.createRadialGradient(x - 3, y - 40 + float, 0, x, y - 35 + float, 22);
+            headGrad.addColorStop(0, '#ff8fab');
+            headGrad.addColorStop(1, '#ff6b9d');
+            ctx.fillStyle = headGrad;
+            ctx.beginPath();
+            ctx.arc(x, y - 38 + float, 22, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Ears with inner detail
+            // Left ear
+            const earGrad = ctx.createLinearGradient(x - 15, y - 55 + float, x - 5, y - 45 + float);
+            earGrad.addColorStop(0, '#ff8fab');
+            earGrad.addColorStop(1, '#ff6b9d');
+            ctx.fillStyle = earGrad;
+            ctx.beginPath();
+            ctx.moveTo(x - 15, y - 50 + float);
+            ctx.lineTo(x - 22, y - 75 + float);
+            ctx.lineTo(x - 6, y - 58 + float);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Right ear
+            ctx.beginPath();
+            ctx.moveTo(x + 15, y - 50 + float);
+            ctx.lineTo(x + 22, y - 75 + float);
+            ctx.lineTo(x + 6, y - 58 + float);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Inner ears
+            ctx.fillStyle = '#ffd4e5';
+            ctx.beginPath();
+            ctx.moveTo(x - 13, y - 52 + float);
+            ctx.lineTo(x - 18, y - 68 + float);
+            ctx.lineTo(x - 8, y - 56 + float);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(x + 13, y - 52 + float);
+            ctx.lineTo(x + 18, y - 68 + float);
+            ctx.lineTo(x + 8, y - 56 + float);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Eyes with depth
+            ctx.fillStyle = '#1a1a2e';
+            ctx.beginPath();
+            ctx.arc(x - 7, y - 42 + float, 5, 0, Math.PI * 2);
+            ctx.arc(x + 7, y - 42 + float, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Eye shine
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(x - 8, y - 44 + float, 2.5, 0, Math.PI * 2);
+            ctx.arc(x + 6, y - 44 + float, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Secondary eye shine
+            ctx.fillStyle = '#4facfe';
+            ctx.beginPath();
+            ctx.arc(x - 6, y - 41 + float, 1.5, 0, Math.PI * 2);
+            ctx.arc(x + 8, y - 41 + float, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Nose
+            ctx.fillStyle = '#9b2335';
+            ctx.beginPath();
+            ctx.arc(x, y - 36 + float, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Animated flames on head
+            const flameHeight1 = 18 + Math.sin(Date.now() / 150) * 6;
+            const flameHeight2 = 12 + Math.sin(Date.now() / 200 + 1) * 4;
+            
+            // Outer flame
+            const flameGrad1 = ctx.createLinearGradient(x, y - 60 + float, x, y - 75 - flameHeight1 + float);
+            flameGrad1.addColorStop(0, `rgba(255, 107, 157, ${glow})`);
+            flameGrad1.addColorStop(1, `rgba(255, 159, 67, 0)`);
+            ctx.fillStyle = flameGrad1;
+            ctx.beginPath();
+            ctx.moveTo(x - 6, y - 58 + float);
+            ctx.quadraticCurveTo(x, y - 65 - flameHeight1 + float, x + 6, y - 58 + float);
+            ctx.fill();
+            
+            // Inner flame
+            const flameGrad2 = ctx.createLinearGradient(x, y - 55 + float, x, y - 70 - flameHeight2 + float);
+            flameGrad2.addColorStop(0, `rgba(255, 215, 0, ${glow})`);
+            flameGrad2.addColorStop(1, `rgba(255, 159, 67, 0)`);
+            ctx.fillStyle = flameGrad2;
+            ctx.beginPath();
+            ctx.moveTo(x - 4, y - 55 + float);
+            ctx.quadraticCurveTo(x, y - 60 - flameHeight2 + float, x + 4, y - 55 + float);
+            ctx.fill();
+            
+            // Paws
+            const pawGrad = ctx.createRadialGradient(x - 12, y + 8 + float, 0, x - 12, y + 8 + float, 8);
+            pawGrad.addColorStop(0, '#ff8fab');
+            pawGrad.addColorStop(1, '#ff6b9d');
+            ctx.fillStyle = pawGrad;
+            ctx.beginPath();
+            ctx.ellipse(x - 14, y + 8 + float, 7, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x + 14, y + 8 + float, 7, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Playing animation extras
+            if (game.spirit.state === 'playing') {
+                ctx.font = '24px Arial';
+                ctx.fillText('✨', x + 30, y - 60 + float);
+                ctx.fillText('⭐', x - 40, y - 40 + float);
+                ctx.fillText('🎵', x + 25, y - 20 + float);
+            }
+        }
+        
+        function drawLighting(camX, camY) {
+            // Draw dynamic lights
+            game.village.lights.forEach(light => {
+                const lx = light.x - camX;
+                const ly = light.y - camY;
+                const pulse = 1 + Math.sin(light.pulse) * 0.1;
+                
+                const lightGrad = ctx.createRadialGradient(lx, ly, 0, lx, ly, light.radius * pulse);
+                lightGrad.addColorStop(0, light.color + '40');
+                lightGrad.addColorStop(0.5, light.color + '20');
+                lightGrad.addColorStop(1, light.color + '00');
+                
+                ctx.globalCompositeOperation = 'screen';
+                ctx.fillStyle = lightGrad;
+                ctx.beginPath();
+                ctx.arc(lx, ly, light.radius * pulse, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+            });
+        }
+        
+        function drawEnhancedParticles(camX, camY) {
+            game.particles.forEach(p => {
+                const alpha = p.life / p.maxLife;
+                ctx.globalAlpha = alpha;
+                
+                switch(p.type) {
+                    case 'heart':
+                        ctx.save();
+                        ctx.translate(p.x - camX, p.y - camY);
+                        ctx.rotate(p.rotation);
+                        ctx.fillStyle = '#ff6b9d';
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = '#ff6b9d';
+                        ctx.font = `${p.size}px Arial`;
+                        ctx.fillText('❤', 0, 0);
+                        ctx.restore();
+                        break;
+                        
+                    case 'star':
+                        ctx.save();
+                        ctx.translate(p.x - camX, p.y - camY);
+                        ctx.rotate(p.rotation);
+                        ctx.fillStyle = '#ffd700';
+                        ctx.shadowBlur = 8;
+                        ctx.shadowColor = '#ffd700';
+                        drawStarShape(0, 0, p.size, 5);
+                        ctx.restore();
+                        break;
+                        
+                    case 'sparkle':
+                        ctx.save();
+                        ctx.translate(p.x - camX, p.y - camY);
+                        ctx.rotate(p.rotation);
+                        ctx.fillStyle = '#4facfe';
+                        ctx.shadowBlur = 6;
+                        ctx.shadowColor = '#4facfe';
+                        ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                        ctx.restore();
+                        break;
+                        
+                    case 'magic':
+                        ctx.fillStyle = p.color || '#9d4edd';
+                        ctx.shadowBlur = 8;
+                        ctx.shadowColor = p.color || '#9d4edd';
+                        ctx.beginPath();
+                        ctx.arc(p.x - camX, p.y - camY, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                        
+                    case 'firefly':
+                        ctx.fillStyle = '#adff2f';
+                        ctx.shadowBlur = 15;
+                        ctx.shadowColor = '#adff2f';
+                        ctx.beginPath();
+                        ctx.arc(p.x - camX, p.y - camY, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                        
+                    case 'ember':
+                        ctx.fillStyle = '#ff6b35';
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = '#ff6b35';
+                        ctx.beginPath();
+                        ctx.arc(p.x - camX, p.y - camY, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                        
+                    case 'dust':
+                        ctx.fillStyle = 'rgba(200, 200, 180, 0.6)';
+                        ctx.beginPath();
+                        ctx.arc(p.x - camX, p.y - camY, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                }
+            });
+            
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+        }
+        
+        function drawStarShape(x, y, size, points) {
+            ctx.beginPath();
+            for (let i = 0; i < points * 2; i++) {
+                const radius = i % 2 === 0 ? size : size / 2;
+                const angle = (i * Math.PI) / points - Math.PI / 2;
+                const px = x + Math.cos(angle) * radius;
+                const py = y + Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        function drawFloatingText(camX, camY) {
+            game.floatingText.forEach(t => {
+                const alpha = t.life / 80;
+                ctx.globalAlpha = alpha;
+                ctx.save();
+                ctx.translate(t.x - camX, t.y - camY);
+                ctx.scale(t.scale, t.scale);
+                
+                ctx.font = 'bold 16px Nunito';
+                ctx.textAlign = 'center';
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 4;
+                ctx.strokeText(t.text, 0, 0);
+                ctx.fillStyle = t.color || '#ffd700';
+                ctx.fillText(t.text, 0, 0);
+                
+                ctx.restore();
+            });
+            ctx.globalAlpha = 1;
+        }
+        
+        function drawScreenEffects() {
+            // Vignette
+            const vigGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 200, canvas.width/2, canvas.height/2, canvas.width);
+            vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            vigGrad.addColorStop(1, 'rgba(0,0,0,0.4)');
+            ctx.fillStyle = vigGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        function drawMinimap() {
+            minimapCtx.fillStyle = '#1a1a2e';
+            minimapCtx.fillRect(0, 0, 150, 100);
+            
+            const scale = 0.08;
+            const offsetX = 75;
+            const offsetY = 50;
+            
+            // Draw world bounds
+            minimapCtx.strokeStyle = '#533483';
+            minimapCtx.strokeRect(
+                offsetX - 925 * scale, 
+                offsetY - 625 * scale, 
+                1850 * scale, 
+                1250 * scale
+            );
+            
+            // Draw buildings
+            minimapCtx.fillStyle = '#666';
+            game.village.buildings.forEach(b => {
+                minimapCtx.fillRect(
+                    offsetX + (b.x - 925) * scale,
+                    offsetY + (b.y - 625) * scale,
+                    b.w * scale,
+                    b.h * scale
+                );
+            });
+            
+            // Draw player
+            minimapCtx.fillStyle = '#4facfe';
+            minimapCtx.beginPath();
+            minimapCtx.arc(
+                offsetX + (game.player.x - 925) * scale,
+                offsetY + (game.player.y - 625) * scale,
+                4, 0, Math.PI * 2
+            );
+            minimapCtx.fill();
+            
+            // Draw spirit
+            minimapCtx.fillStyle = '#ff6b9d';
+            minimapCtx.beginPath();
+            minimapCtx.arc(
+                offsetX + (game.spirit.x - 925) * scale,
+                offsetY + (game.spirit.y - 625) * scale,
+                3, 0, Math.PI * 2
+            );
+            minimapCtx.fill();
+            
+            // Border
+            minimapCtx.strokeStyle = '#533483';
+            minimapCtx.lineWidth = 2;
+            minimapCtx.strokeRect(0, 0, 150, 100);
+        }
+        
+        // Utility functions
+        function lighten(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255))
+                .toString(16).slice(1);
+        }
+        
+        function darken(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) - amt;
+            const G = (num >> 8 & 0x00FF) - amt;
+            const B = (num & 0x0000FF) - amt;
+            return '#' + (0x1000000 + (R > 0 ? R : 0) * 0x10000 +
+                (G > 0 ? G : 0) * 0x100 +
+                (B > 0 ? B : 0))
+                .toString(16).slice(1);
+        }
+        
+        function gameLoop(timestamp) {
+            const dt = timestamp - game.lastTime;
+            game.lastTime = timestamp;
+            
+            update(dt);
+            draw();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Initialize
+        initVillage();
+        updateUI();
+        requestAnimationFrame(gameLoop);
+        
+        // Welcome message
+        setTimeout(() => {
+            showDialogue("Elder Sage", "Welcome to Aetheria Village! The spirits await your bond, young Warden.");
+        }, 1500);
+    </script>
+</body>
+</html>
